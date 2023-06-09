@@ -2,7 +2,10 @@
 __pycache__
 .vscode
 .venv
-data/*
+data/bibliometric
+data/flickr-data
+data/hyp
+data/wikispeedia
 kubernetes
 .dockerignore
 run*
