@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: comptrails-{{}}-dataset
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      containers:
+        - name: comptrails-{{}}-dataset
+          image: ls6-staff-registry.informatik.uni-wuerzburg.de/koopmann/comptrails-dataset:latest
+          resources:
+            limits:
+              cpu: 1
+              memory: "50Gi"
+            requests:
+              cpu: 1
+              memory: "50Gi"
+          imagePullPolicy: "Always"
+          volumeMounts:
+            - mountPath: "/workdir/"
+              name: home
+          env:
+            - name: HOME
+              value: "/workdir/"
+          command: ["/bin/bash",  "-c", "python3 -u Code/data_generation/generate_dataset.py {{}}"]
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: ls6-staff-registry
+      volumes:
+        - name: home
+          cephfs:
+            monitors:
+              - 132.187.14.16
+              - 132.187.14.17
+              - 132.187.14.19
+              - 132.187.14.20
+            user: koopmann
+            path: "/home/ls6/koopmann/code-2020-authortrails/"
+            secretRef:
+              name: ceph-secret
