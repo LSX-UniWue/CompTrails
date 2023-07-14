@@ -4,9 +4,11 @@ __pycache__
 .venv
 data/bibliometric
 data/flickr-data
-data/hyp
 data/wikispeedia
+data/hyp
+data/evidences
+data/images
 kubernetes
 .dockerignore
-run*
 paper_figures
+*DS_Store

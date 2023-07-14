@@ -52,7 +52,7 @@ def load_and_filter(paths: list, filters: dict) -> list:
     return evidences
 
 
-def my_plot(evidences: dict, configs: list, label_name: str, transition_weighted: bool, save_path: str, subplot_titles: list = None) -> None:
+def my_plot(evidences: dict, configs: list, label_name: str, transition_weighted: bool, save_path: str, subplot_titles: list = None, perc: int = 100) -> None:
     tex_fonts = {
         # Use LaTeX to write all text
         "text.usetex": True,
@@ -86,17 +86,19 @@ def my_plot(evidences: dict, configs: list, label_name: str, transition_weighted
     for idx, (name, evi) in enumerate(evidences.items()):
         # maybe put all of one data_generation in the same plot?
         label_idx = idx % 2
+        number_runs = evi.shape[1]
+        only_evi = evi[:, :int(number_runs * perc / 100), 0]
         if transition_weighted:
             data = []
-            for i in range(evi[:, :, 0].shape[0]):  # usually 17
+            for i in range(only_evi.shape[0]):  # usually 17
                 curr = []
                 for val in evi[i, :, [0, 1]].T:  # something like 100x2
                     if not np.isnan(val[0]):
                         curr.extend(np.repeat(val[0], val[1]))
                 data.append(curr)
         else:
-            mask = ~np.isnan(evi[:, :, 0])
-            data = [d[m].tolist() for d, m in zip(evi[:, :, 0], mask)]
+            mask = ~np.isnan(only_evi)
+            data = [d[m].tolist() for d, m in zip(only_evi, mask)]
         # Filter data using np.isnan
         plot_identifier = int(idx / 2)
         error_plot_data = np.array([(np.nanmean(x), np.nanstd(x)) for x in data])
@@ -123,6 +125,8 @@ def my_plot(evidences: dict, configs: list, label_name: str, transition_weighted
 
 class EvalDataset(str, enum.Enum):
     BARABASI = "Barabasi-Albert"
+    BARABASI_DENSITY = "Barabasi-Albert Different Density"
+    BARABASI_NOSAMPLE = "Barabasi-Albert No Sample"
     BARABASI_NOGRAPH = "Barabasi-Albert with graph structure"
     BARABASI_ABSTRACTION = "Barabasi-Albert Reduce"
     BARABASI_IMPORTANCE = "Barabasi-Albert Importance"
@@ -132,7 +136,7 @@ class EvalDataset(str, enum.Enum):
         return self.value
 
 
-eval_datasets = [EvalDataset.BARABASI, EvalDataset.BARABASI_ABSTRACTION, EvalDataset.BARABASI_NOGRAPH]
+eval_datasets = [EvalDataset.BARABASI]
 LEGEND = (200, 1000)
 
 
@@ -143,30 +147,43 @@ if __name__ == '__main__':
             hypotheses = ['even_graph-0', 'even_graph-1', 'odd_graph-0', 'odd_graph-1', 'uni-0', 'uni-1']
             label = 'even'
             subplot_titles = None
+            save_path = os.path.join("data", "images", "barabasi_evidences_even")
+        elif eval_dataset == EvalDataset.BARABASI_DENSITY:
+            paths = [os.path.join("data", "evidences", "barabasi_evidences_even_diff_densities.json")]
+            hypotheses = ['even_graph-0', 'even_graph-1', 'odd_graph-0', 'odd_graph-1', 'uni-0', 'uni-1']
+            label = 'even'
+            subplot_titles = None
+            save_path = os.path.join("data", "images", "barabasi_evidences_density")
+        elif eval_dataset == EvalDataset.BARABASI_NOSAMPLE:  
+            paths = [os.path.join("data", "evidences", "barabasi_unsampled_evidences.json")]
+            hypotheses = ['even_graph-0', 'even_graph-1', 'odd_graph-0', 'odd_graph-1', 'uni-0', 'uni-1']
+            label = 'even'
+            subplot_titles = None
+            save_path = os.path.join("data", "images", "barabasi_unsampled_evidences")
         elif eval_dataset == EvalDataset.BARABASI_NOGRAPH:
             paths = [os.path.join("data", "evidences", "barabasi_evidences_even.json")]
             hypotheses = ['even-0', 'even-1', 'odd-0', 'odd-1', 'teleport-0', 'teleport-1']
             label = 'even'
             subplot_titles = ["Even-global", "Odd-global", "Uni-global"]
-            save_path = os.path.join("data", "images", "barabasi_evidences_even_graph_")
+            save_path = os.path.join("data", "images", "barabasi_evidences_even_graph")
         elif eval_dataset == EvalDataset.BARABASI_ABSTRACTION:
             paths = [os.path.join("data", "evidences", "barabasi_evidences_even_reduced.json")]
             hypotheses = ['even-0', 'even-1', 'odd-0', 'odd-1', 'uni-0', 'uni-1']
             label = 'even'
             subplot_titles = None
-            save_path = os.path.join("data", "images", "barabasi_evidences_even_reduced_")
+            save_path = os.path.join("data", "images", "barabasi_evidences_even_reduced")
         elif eval_dataset == EvalDataset.BARABASI_IMPORTANCE:
             paths = [os.path.join("data", "evidences", "barabasi_evidences_importance.json")]
             hypotheses = ['only_least_important-0', 'only_least_important-1', 'only_most_important-0', 'only_most_important-1', 'uni-0', 'uni-1']
             label = 'only_most_important'
             subplot_titles = ['high', 'low', 'uni']
-            save_path = os.path.join("data", "images", "barabasi_evidences_importance_")
+            save_path = os.path.join("data", "images", "barabasi_evidences_importance")
         elif eval_dataset == EvalDataset.BARABASI_IMPORTANCE_REDUCE:
             paths = [os.path.join("data", "evidences", "barabasi_evidences_importance_reduced.json")]
             hypotheses = ['importance-0-0', 'importance-0-1', 'importance-9-0', 'importance-9-1', 'uni-0', 'uni-1']
             label = 'only_most_important'
             subplot_titles = ["high", "low", "uni"]
-            save_path = os.path.join("data", "images", "barabasi_evidences_importance_reduced_")
+            save_path = os.path.join("data", "images", "barabasi_evidences_importance_reduced")
         else:
             print("ERROR: No such data_generation. ")
             exit(1)
@@ -175,4 +192,6 @@ if __name__ == '__main__':
             evidences = load_and_filter(paths=paths, filters={'sampling_strategies': sampling_strategy[0]})
             selected = {x: np.array([evi[x] for evi in evidences]) for x in hypotheses}
             configs = [evi['config'] for evi in evidences]
-            my_plot(evidences=selected, configs=configs, label_name=label, save_path=f"{save_path + sampling_strategy[1]}.png", subplot_titles=subplot_titles)
+            # my_plot(evidences=selected, configs=configs, label_name=label, save_path=f"{save_path}_{sampling_strategy[1]}.png", subplot_titles=subplot_titles, transition_weighted=False)
+            for i in [10, 30, 50, 70]:
+                my_plot(evidences=selected, configs=configs, label_name=label, save_path=f"{save_path}_runs{i}_{sampling_strategy[1]}.png", subplot_titles=subplot_titles, transition_weighted=False, perc=i)

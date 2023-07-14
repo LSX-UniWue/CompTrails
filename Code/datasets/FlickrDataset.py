@@ -7,6 +7,23 @@ from Code.datasets.AbstractDatasets import *
 
 
 # To remember: http://geodb-cities-api.wirefreethought.com/docs/tutorials/wikidata/city-tourist-attractions
+# Wiki SparQL example: 
+# PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+# PREFIX wd: <http://www.wikidata.org/entity/>
+# PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+# SELECT DISTINCT ?attraction ?attractionLabel ?gps 
+
+# WHERE {
+#     ?attraction (wdt:P31/wdt:P279*) wd:Q570116;
+#         wdt:P625 ?gps;
+#         rdfs:label ?attractionLabel.
+ 
+#     ?attraction wdt:P131 wd:Q24639
+            
+#     FILTER(LANG(?attractionLabel) = "en")
+# }
+
 
 class FlickrDataset(ReadWorldDataset):
     def __init__(self, args: dict):

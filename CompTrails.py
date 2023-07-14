@@ -13,7 +13,6 @@ from pytrails.hyptrails import MarkovChain
 from Code import *
 from Code.datasets.AbstractDatasets import load_real_world_dataset
 from Code.datasets.BarabasiDatasets import *
-# from Code.datasets.BibliometricDataset import BibliometricDataset
 from Code.datasets.WikispeediaDataset import WikipediaDataset
 from Code.datasets.FlickrDataset import FlickrDataset
 
@@ -24,10 +23,9 @@ class CompTrails:
         self.save_file = args['save_file'] if 'save_file' in args else None
         self.sampling = args['sampling']
         self.sampling_strategies = args['sampling_strategies']
-        self.transition_sampling_strategy = args['transition_sampling_strategy']
         self.fixed_transitions_sampling_count = args['fixed_transitions_sampling_count'] if 'fixed_transitions_sampling_count' in args else None
-        self.number_samples = args['number_samples']
         self.sample_percentage = args['sample_percentage'] if 'sample_percentage' in args else 1.0
+        self.number_samples = args['number_samples']
         self.eval_method = args["eval_method"]
         self.verbose = args['verbose']
         self.dataset_name = args['data_generation']
@@ -38,8 +36,6 @@ class CompTrails:
             # self.dataset = BibliometricDataset(args=args['bib_dataset'])
             print("ERROR: Bibliometric dataset is only supported using loaded dataset. ")
             exit(1)
-        elif args['data_generation'] == ComptrailsDataset.WIKIPEDIA:
-            self.dataset = WikipediaDataset(args=args['wiki_dataset'])
         elif args['data_generation'] == ComptrailsDataset.WIKISPEEDIA:
             self.dataset = WikipediaDataset(args=args['wikispeedia_dataset'])
         elif args['data_generation'] == ComptrailsDataset.FLICKR:
@@ -108,11 +104,13 @@ class CompTrails:
         transitions = self.transitions.copy()
         hypotheses = self.hypotheses.copy()
         result = []
+
         if self.sampling:
             sampled_transitions, sampled_hypotheses = self.coherent_sampling(transitions=transitions, hypothesis=hypotheses, sampling_strategy=sampling_strategy)
         else:
             sampled_transitions = [[copy.deepcopy(transitions[idx]) for _ in range(len(hypotheses[0]))] for idx in range(len(transitions))]
             sampled_hypotheses = copy.deepcopy(hypotheses)
+
         for i in range(len(sampled_transitions)):
             for hyp_idx, (name, sampled_hypothesis) in enumerate(sampled_hypotheses[i].items()):
                 if self.eval_method == EvaluationMetric.JENSONSHANNON:
@@ -128,8 +126,6 @@ class CompTrails:
                 else:
                     print("ERROR: Cannot find eval method: ", self.eval_method)
                     sys.exit(1)
-                # if self.row_wise_weighted:
-                #     divergence = np.repeat(divergence, sampled_transitions[i][hyp_idx].sum(axis=1).reshape(-1).tolist()[0])
                 result.append({'id': name + "-" + str(i),
                                'divergence': np.nanmean(divergence),
                                'transition_sum': sampled_transitions[i][hyp_idx].sum(),
@@ -193,10 +189,7 @@ class CompTrails:
             # For each hypothesis
             for hyp_name in curr_hypotheses[matrix_i].keys():
                 # randomly sample min_size amount of states with "zurücklegen"
-                rand_idx = self.sample_states(adjacency={'transition': curr_transitions[matrix_i],
-                                                         'hypothesis': curr_hypotheses[matrix_i][hyp_name]},
-                                              sample_size=sample_size,
-                                              sampling_strategy=sampling_strategy)
+                rand_idx = self.sample_states(adjacency={'transition': curr_transitions[matrix_i], 'hypothesis': curr_hypotheses[matrix_i][hyp_name]}, sample_size=sample_size, sampling_strategy=sampling_strategy)
                 sample_transitions = curr_transitions[matrix_i][:, rand_idx][rand_idx, :]
                 curr_hypotheses[matrix_i][hyp_name] = curr_hypotheses[matrix_i][hyp_name][:, rand_idx][rand_idx, :]
                 # Sort transitions by amount of transitions
@@ -212,31 +205,25 @@ class CompTrails:
                     curr_hypotheses[matrix_i][hyp_name] = normalize(curr_hypotheses[matrix_i][hyp_name], norm='l1', axis=1)
                 sampled_state_hypotheses[matrix_i][hyp_name] = curr_hypotheses[matrix_i][hyp_name]
         sampled_transition_transitions = [[] for _ in range(amount_matrices)]
-        for idx in range(len(sampled_state_transitions[0])):
-            for idy in range(sample_size):
+        for matrix_number in range(len(sampled_state_transitions[0])):
+            current = [[] for _ in range(amount_matrices)]
+            for row in range(sample_size):
                 if self.fixed_transitions_sampling_count:
                     amount_sampled_transitions = self.fixed_transitions_sampling_count
                 else:
-                    amount_sampled_transitions = int(min(m[idx][idy].sum() for m in sampled_state_transitions))
+                    amount_sampled_transitions = int(min(m[matrix_number][row].sum() for m in sampled_state_transitions))
                 for matrix_idx in range(amount_matrices):
-                    if amount_sampled_transitions > 0 and sampled_state_transitions[matrix_idx][idx][idy].sum() > 0:
-                        if self.transition_sampling_strategy == TransitionSamplingStrategy.DISTRIBUTIONBASED:
-                            prob_distr = sampled_state_transitions[matrix_idx][idx][idy] / \
-                                         sampled_state_transitions[matrix_idx][idx][idy].sum()
-                            samples = np.random.choice(sample_size, size=amount_sampled_transitions,
-                                                       p=prob_distr.A[0] if isinstance(prob_distr,
-                                                                                       csr_matrix) else prob_distr)
-                            reduce_by_key = np.array([len(np.where(samples == x)[0]) for x in range(sample_size)])
-                            sampled_transition_transitions[matrix_idx].append(reduce_by_key)
-                        elif self.transition_sampling_strategy == TransitionSamplingStrategy.CONNECTIONBASED:
-                            binarized = np.where(sampled_state_transitions[matrix_idx][idx][idy] > 0.0, 1.0, 0.0)
-                            sampled_transition_transitions[matrix_idx].append(binarized)
-                        elif self.transition_sampling_strategy == TransitionSamplingStrategy.NONE:
-                            sampled_transition_transitions[matrix_idx].append(
-                                sampled_state_transitions[matrix_idx][idx][idy])
+                    if amount_sampled_transitions > 0 and sampled_state_transitions[matrix_idx][matrix_number][row].sum() > 0:
+                        current_row = sampled_state_transitions[matrix_idx][matrix_number][row].A
+                        prob_distr = current_row / current_row.sum()
+                        samples = np.random.choice(sample_size, size=amount_sampled_transitions, p=prob_distr[0])
+                        reduce_by_key = np.array([len(np.where(samples == x)[0]) for x in range(sample_size)])
+                        current[matrix_idx].append(reduce_by_key)
                     else:
-                        sampled_transition_transitions[matrix_idx].append(np.zeros(sample_size))
-        return sampled_state_transitions, sampled_state_hypotheses
+                        current[matrix_idx].append(np.zeros(sample_size))
+            for i, x in enumerate(current):
+                sampled_transition_transitions[i].append(csr_matrix(x))
+        return sampled_transition_transitions, sampled_state_hypotheses
 
     @staticmethod
     def get_density(m: csr_matrix) -> float:
@@ -301,30 +288,29 @@ class CompTrails:
 if __name__ == '__main__':
     STEPS = np.arange(0.0, 1.01, 0.1)
     dataset = sys.argv[1]
-    sample_percentage = float(sys.argv[2]) / 10
     print(f"Running dataset {dataset} ;) ")
     if dataset == "barabasi":  # Does random sampling, snowball on transition and snowball on hypothesis sampling, and no gsf as well
-        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 1000, 'sample_percentage': sample_percentage, 'max_transition_count': [2, 2], 'amount_walks': [1, 1], 'max_walk_len': [4, 4], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_{sample_percentage*10}.json'} for i in STEPS]
+        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 25], 'amount_walks': [5, 15], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even.json'} for i in STEPS]
+    elif dataset == "barabasi-diff-densities":  
+        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 5], 'amount_walks': [5, 5], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even_diff_densities.json'} for i in STEPS]
     elif dataset == "barabasi-no-sample":  
-        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'sampling': False, 'sample_percentage': 1.0, 'max_transition_count': [2, 2], 'amount_walks': [1, 1], 'max_walk_len': [4, 4], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': 'barabasi_unsampled_evidences.json'} for i in STEPS]
+        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'sampling': False, 'number_samples': 1, 'sample_percentage': 0.1, 'max_transition_count': [5, 25], 'amount_walks': [5, 15], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': 'barabasi_unsampled_evidences.json'} for i in STEPS]
     elif dataset == "barabasi-binary":  
         configs = [{"data_generation": ComptrailsDataset.REDUCEDBARABASIALBERT, 'sample_percentage': 1.0, 'max_transition_count': [2, 2], 'amount_walks': [1, 1], 'max_walk_len': [4, 4], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': 'barabasi_abstracted_evidences.json'} for i in STEPS]
     elif dataset == "barabasi-classes":  
         configs = [{"data_generation": ComptrailsDataset.REDUCEDBARABASIALBERT, 'max_importance': 10, 'use_importance': True, 'sample_percentage': 1.0, 'max_transition_count': [2, 2], 'amount_walks': [1, 1], 'max_walk_len': [4, 4], 'barabasi_transition_probas': [{'only_most_important': round(1.0 - i, 2), 'only_least_important': round(i, 2)}, {'only_most_important': round(1.0 - i, 2), 'only_least_important': round(i, 2)}], 'save_file': 'barabasi_abstracted_evidences.json'} for i in STEPS]
     elif dataset == "wikispeedia":
-        configs = [{"data_generation": ComptrailsDataset.WIKISPEEDIA, 'sample_percentage': 0.1, "save_file": "wikispeedia.json"}]
+        configs = [{"data_generation": ComptrailsDataset.WIKISPEEDIA, 'sample_percentage': 0.3, "number_samples": 100, "save_file": "wikispeedia.json"}]
     elif dataset == "wikispeedia-loaded":
-        configs = [{'data_generation': ComptrailsDataset.LOADEDREALWORLD, 'save_file': 'wikispeedia.json', 'sample_percentage': 0.1, 'loaded_dataset_path': os.path.join('data', 'wikispeedia', f'wiki_matrices')}]
+        configs = [{'data_generation': ComptrailsDataset.LOADEDREALWORLD, 'save_file': 'wikispeedia.json', 'sample_percentage': 0.3, "number_samples": 100, 'loaded_dataset_path': os.path.join('data', 'wikispeedia', f'wiki_matrices')}]
     elif dataset == "flickr":
         configs = [{"data_generation": ComptrailsDataset.FLICKR, 'sample_percentage': 1.0, "save_file": "flickr.json"}]
     elif dataset == "loaded-bib":
-        configs = [{"data_generation": ComptrailsDataset.LOADEDREALWORLD, 'number_samples': 10000, 'sample_percentage': 0.01, "save_file": "bibliometric.json", 'loaded_dataset_path': os.path.join('data', 'bibliometric', 'bibliometric_matrices')}]
-    elif dataset == "bib-country":
-        configs = [{"data_generation": ComptrailsDataset.BIBLIOMETRIC, 'type': 'country', 'sampling': False, 'sample_percentage': 0.1, "save_file": "bibliometric_country.json"}]
-    elif dataset == "bib-affiliation":
-        configs = [{"data_generation": ComptrailsDataset.BIBLIOMETRIC, 'type': 'affiliation', 'sampling': True, 'sample_percentage': 0.1, "save_file": "bibliometric_affiliation.json"}]
+        configs = [{"data_generation": ComptrailsDataset.LOADEDREALWORLD, 'number_samples': 100, 'sample_percentage': 0.1, "save_file": "bibliometric.json", 'loaded_dataset_path': os.path.join('data', 'bibliometric', 'bibliometric_matrices')}]
+    elif dataset == "loaded-bib-country":
+        configs = [{"data_generation": ComptrailsDataset.LOADEDREALWORLD, 'number_samples': 100, 'sampling': False,  'sample_percentage': 0.1, "save_file": "bibliometric_country.json", 'loaded_dataset_path': os.path.join('data', 'bibliometric', 'bibliometric_matrices_country')}]
     elif dataset == "loaded-bib-affiliation":
-        configs = [{"data_generation": ComptrailsDataset.LOADEDREALWORLD, 'number_samples': 10000, 'sample_percentage': 0.01, "save_file": "bibliometric_affiliation.json", 'loaded_dataset_path': os.path.join('data', 'bibliometric', 'bibliometric_matrices_affiliation')}]
+        configs = [{"data_generation": ComptrailsDataset.LOADEDREALWORLD, 'number_samples': 1000, 'sample_percentage': 0.01, "save_file": "bibliometric_affiliation.json", 'loaded_dataset_path': os.path.join('data', 'bibliometric', 'bibliometric_matrices_affiliation')}]
     else:
         print(f"ERROR: Cannot create conig for {dataset}")
         exit(1)
@@ -339,10 +325,10 @@ if __name__ == '__main__':
             'sample_percentage': config['sample_percentage'] if 'sample_percentage' in config else 1.0,
             'number_samples': config['number_samples'] if 'number_samples' in config else 1000,  # number of samples taken
             'sampling_strategies': [StateSamplingStrategy.SNOWBALL_HYPOTHESIS, StateSamplingStrategy.SNOWBALL_TRANSITION, StateSamplingStrategy.RANDOM],
-            'transition_sampling_strategy': config['transition_samplings'] if 'transition_samplings' in config else TransitionSamplingStrategy.DISTRIBUTIONBASED,
+            'graph_type': config['graph_type'] if 'graph_type' in config else 'barabasi',
             'data_generation': config['data_generation'],
             'loaded_dataset_path': config['loaded_dataset_path'] if 'loaded_dataset_path' in config else None,
-            'max_transition_count': config['max_transition_count'] if 'max_transition_count' in config else [5, 5],
+            'max_transition_count': config['max_transition_count'] if 'max_transition_count' in config else [5, 5],  # If floats are given, they will be treated as percentages
             'transition_probas': config["barabasi_transition_probas"] if "barabasi_transition_probas" in config else [{'even': 1.0, 'odd': 0.0}, {'even': 0.0, 'odd': 1.0}],  # Barabasi Albert Dataset
             'amount_walks': config['amount_walks'] if 'amount_walks' in config else [10, 10],  # Barabasi Albert Dataset
             'max_walk_len': config['max_walk_len'] if 'max_walk_len' in config else [10, 10],  # Barabasi Albert Dataset

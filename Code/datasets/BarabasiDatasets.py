@@ -6,6 +6,16 @@ from Code.datasets.GraphWalker import PropertyWalker
 from Code.datasets.AbstractDatasets import SyntheticDataset, row_wise_normalize
 
 
+def create_random_graph(n: int, m: int) -> nx.Graph:
+    """
+    Creates a random graph with n nodes and m edges.
+    """
+    graph = nx.Graph()
+    graph.add_nodes_from(np.arange(n))
+    edges = np.array([[(i, k) for k in np.random.choice(np.arange(n), size=m, replace=False)] for i in range(n)]).reshape(-1, 2)
+    graph.add_edges_from(edges)
+    return graph
+
 class ReducedBarabasiAlbertDataset(SyntheticDataset):
     def __init__(self, args: dict):
         super().__init__(args=args)
@@ -91,8 +101,16 @@ class BarabasiAlbertDataset(SyntheticDataset):
                 print("ERROR: Transition probabilities of graph ", i, " do not sum up to 1. ")
                 exit(1)
         print("Transition probabilities are: ", self.transition_probas)
-        self.graphs = [nx.barabasi_albert_graph(size, transition_counts) for size, transition_counts in
-                       zip(self.sizes, self.max_transition_count)]
+        self.actual_transition_counts = []
+        for counts, sizes in zip(self.max_transition_count, self.sizes):
+            if isinstance(counts, int):
+                self.actual_transition_counts.append(counts)
+            else:
+                self.actual_transition_counts.append(int(counts * sizes))
+        if args['graph_type'] == "random":
+            self.graphs = [create_random_graph(size, transition_counts) for size, transition_counts in zip(self.sizes, self.actual_transition_counts)]
+        else:  # args['graph_type'] == "barabasi"
+            self.graphs = [nx.barabasi_albert_graph(size, transition_counts) for size, transition_counts in zip(self.sizes, self.actual_transition_counts)]
         # Adding Importance scores to each node in both graphs (between 0 and 10)
         labels = [{node: np.random.randint(self.max_importance) for node in graph.nodes} for graph in self.graphs]
         [nx.set_node_attributes(self.graphs[i], labels[i], "Importance") for i in range(len(self.graphs))]
