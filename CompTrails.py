@@ -290,7 +290,7 @@ if __name__ == '__main__':
     dataset = sys.argv[1]
     print(f"Running dataset {dataset} ;) ")
     if dataset == "barabasi":  # Does random sampling, snowball on transition and snowball on hypothesis sampling, and no gsf as well
-        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 25], 'amount_walks': [5, 15], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even.json'} for i in STEPS]
+        configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 25], 'amount_walks': [5, 25], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even.json'} for i in STEPS]
     elif dataset == "barabasi-diff-densities":  
         configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 5], 'amount_walks': [5, 5], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even_diff_densities.json'} for i in STEPS]
     elif dataset == "barabasi-no-sample":  
@@ -300,7 +300,7 @@ if __name__ == '__main__':
     elif dataset == "barabasi-classes":  
         configs = [{"data_generation": ComptrailsDataset.REDUCEDBARABASIALBERT, 'max_importance': 10, 'use_importance': True, 'sample_percentage': 1.0, 'max_transition_count': [2, 2], 'amount_walks': [1, 1], 'max_walk_len': [4, 4], 'barabasi_transition_probas': [{'only_most_important': round(1.0 - i, 2), 'only_least_important': round(i, 2)}, {'only_most_important': round(1.0 - i, 2), 'only_least_important': round(i, 2)}], 'save_file': 'barabasi_abstracted_evidences.json'} for i in STEPS]
     elif dataset == "wikispeedia":
-        configs = [{"data_generation": ComptrailsDataset.WIKISPEEDIA, 'sample_percentage': 0.3, "number_samples": 100, "save_file": "wikispeedia.json"}]
+        configs = [{"data_generation": ComptrailsDataset.WIKISPEEDIA, 'sample_percentage': 0.1, "number_samples": 100, "save_file": "wikispeedia.json"}]
     elif dataset == "wikispeedia-loaded":
         configs = [{'data_generation': ComptrailsDataset.LOADEDREALWORLD, 'save_file': 'wikispeedia.json', 'sample_percentage': 0.3, "number_samples": 100, 'loaded_dataset_path': os.path.join('data', 'wikispeedia', f'wiki_matrices')}]
     elif dataset == "flickr":

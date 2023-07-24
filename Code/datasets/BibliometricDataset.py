@@ -3,6 +3,7 @@ import multiprocessing
 import networkx as nx
 import torch
 import umap
+from tqdm import tqdm
 from transformers import *
 from scipy.sparse import csr_matrix, vstack
 from pathlib import Path
@@ -139,9 +140,6 @@ class BibliometricDataset(ReadWorldDataset):
                 print("Creating cognitive reduction. ")
                 self.get_semantic_similarity_clutser(abstracts_per_paper=abstract_per_paper, file_path=file_path, i=i)
                 exit(0)
-                reduced_matrix, state_dict = self.extract_statetype_graph(network=nx.adjacency_matrix(graph), i=i, file_path=file_path)
-                self.transitions.append(reduced_matrix)
-                self.hypotheses.append(self.create_country_hypotheses(state_dict))
             else:
                 self.hypotheses.append(self.create_hypothesis(graph=graph, i=i, file_path=file_path, abstracts=abstract_per_paper))
                 self.transitions.append(nx.adjacency_matrix(graph))
