@@ -6,7 +6,7 @@ Behavioral Networks is a collective term for networks that contain relational in
 
 ## Synthetic Example
 
-Simple run the script `synthetic_example.py` in the folder `synthetic_example/`. The script will generate a synthetic dataset and run the algorithm on it. The results will be saved in the folder `data/synthetic/` and the final images under `data/images`.
+Simple run the script `synthetic_example.py` in the folder `Code/`. The script will generate a synthetic dataset and run the algorithm on it. The results will be saved in the folder `data/synthetic/` and the final images under `data/images`.
 
 ## Synthetic data
 
@@ -16,7 +16,7 @@ Here a small description of the data used in this project and how to access them
 
 ### Bibliographic
 
-Can be found in our zenoodo repository under: https://zenodo.org/record/ todo 
+Can be found in our zenoodo repository at [Zenodo](https://zenodo.org/records/3930390). 
 or be constructed using the script `generate_dataset.py` in the folder `Code/data_generation`. The script will download the data from the DBLP website and save it in the folder `data/bibliographic/`.
 
 ### Wikispeedia
