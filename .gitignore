@@ -1,14 +1,9 @@
 # Add any directories, files, or patterns you don't want to be tracked by version control
 __pycache__
-.vscode
+.vscode/settings.json
 .venv
-data/bibliometric
-data/flickr-data
-data/wikispeedia
-data/hyp
-data/evidences
-data/images
-kubernetes
+data/**/*.png
+data/**/*.npy
 .dockerignore
 paper_figures
 *DS_Store

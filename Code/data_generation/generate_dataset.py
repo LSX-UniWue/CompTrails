@@ -13,7 +13,7 @@ from dblp_parser import parse_dblp, parse_dblp_person, get_dblp_country
 
 DATA_PATH = Path('data', 'bibliometric')  # local "../data/"
 DBLP_URL = 'https://dblp.org/xml/'
-SEMANTIC_SCHOLAR_URL = 'htthttps://s3-us-west-2.amazonaws.com/ai2-s2-research-public/open-corpus/2022-05-01/'
+SEMANTIC_SCHOLAR_URL = 'https://s3-us-west-2.amazonaws.com/ai2-s2-research-public/open-corpus/2022-05-01/'
 
 
 def download_dblp() -> None:

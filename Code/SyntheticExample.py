@@ -11,7 +11,7 @@ from scipy.stats import sem
 from scipy.spatial.distance import jensenshannon
 import networkx as nx
 from scipy.stats import mannwhitneyu
-from Code.datasets.GraphWalker import SameNodeWalker, UniformWalker
+from datasets.GraphWalker import SameNodeWalker, UniformWalker
 
 
 np.random.seed(42)
