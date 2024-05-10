@@ -266,7 +266,7 @@ def extract_german_ai(source: Path = Path(DATA_PATH, 'ai_community_dataset.json'
 
 
 if __name__ == '__main__':
-    input_args = sys.argv[1]
+    input_args = "ai" if len(sys.argv[1]) is 0 else sys.argv[1]
     datasets = []
     print(f"Starting pipeline for {input_args}")
     for abbrev, long_name in [

@@ -287,7 +287,7 @@ class CompTrails:
 
 if __name__ == '__main__':
     STEPS = np.arange(0.0, 1.01, 0.1)
-    dataset = sys.argv[1]
+    dataset = "barabasi" if len(sys.argv[1]) == 0 else sys.argv[1]
     print(f"Running dataset {dataset} ;) ")
     if dataset == "barabasi":  # Does random sampling, snowball on transition and snowball on hypothesis sampling, and no gsf as well
         configs = [{"data_generation": ComptrailsDataset.BARABASIALBERT, 'number_samples': 100, 'sample_percentage': 0.1, 'max_transition_count': [5, 25], 'amount_walks': [5, 25], 'max_walk_len': [5, 5], 'barabasi_transition_probas': [{'even': round(1.0 - i, 2), 'odd': round(i, 2)}, {'even': round(1.0 - i, 2), 'odd': round(i, 2)}], 'save_file': f'barabasi_evidences_even.json'} for i in STEPS]

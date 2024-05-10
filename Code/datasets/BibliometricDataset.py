@@ -404,7 +404,6 @@ class BibliometricDataset(ReadWorldDataset):
 
 
 if __name__ == '__main__':
-    # datasets = [sys.argv[1]]
     datasets = ["ss", "dm", "ai", "sp", "r", "hci"]
     all_datasets = ["ss", "dm", "ai", "sp", "r", "hci"]
     basedir = Path("data", 'bibliometric')
